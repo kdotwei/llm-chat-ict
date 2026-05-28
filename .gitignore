@@ -1,3 +1,30 @@
 course_resources
 course_resources/*
 AGENTS.md
+llm-chat
+reports/
+report-final.md
+
+# Dependencies
+node_modules/
+
+# Build output
+dist/
+dist-ssr/
+
+# Local env files
+.env
+.env.local
+.env.*.local
+
+# Logs
+npm-debug.log*
+
+# Editor / OS
+.DS_Store
+*.suo
+.idea/
+.vscode/
+
+# TypeScript cache
+*.tsbuildinfo
