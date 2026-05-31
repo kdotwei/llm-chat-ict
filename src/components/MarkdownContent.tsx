@@ -1,12 +1,21 @@
 import ReactMarkdown from 'react-markdown'
 import remarkGfm from 'remark-gfm'
+import remarkMath from 'remark-math'
+import rehypeKatex from 'rehype-katex'
 import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter'
 import { oneDark } from 'react-syntax-highlighter/dist/esm/styles/prism'
+
+function normalizeMathDelimiters(value: string) {
+  return value
+    .replace(/\\\[((?:.|\n)*?)\\\]/g, (_, expression: string) => `\n\n$$\n${expression.trim()}\n$$\n\n`)
+    .replace(/\\\(((?:.|\n)*?)\\\)/g, (_, expression: string) => `$${expression.trim()}$`)
+}
 
 export default function MarkdownContent({ content }: { content: string }) {
   return (
     <ReactMarkdown
-      remarkPlugins={[remarkGfm]}
+      remarkPlugins={[remarkGfm, remarkMath]}
+      rehypePlugins={[rehypeKatex]}
       components={{
         code({ className, children, ...props }) {
           const match = /language-(\w+)/.exec(className ?? '')
@@ -79,7 +88,7 @@ export default function MarkdownContent({ content }: { content: string }) {
         },
       }}
     >
-      {content}
+      {normalizeMathDelimiters(content)}
     </ReactMarkdown>
   )
 }

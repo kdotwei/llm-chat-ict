@@ -41,3 +41,14 @@
 ::-webkit-scrollbar-thumb:hover {
   background: rgba(156, 163, 175, 0.4);
 }
+
+.katex-display {
+  margin: 0.75rem 0;
+  overflow-x: auto;
+  overflow-y: hidden;
+  padding: 0.15rem 0;
+}
+
+.katex {
+  font-size: 1.04em;
+}

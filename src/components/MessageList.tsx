@@ -178,10 +178,10 @@ function ToolMessageCard({ message }: { message: Message }) {
 function WorkingBubble({ processingStatus }: { processingStatus: string }) {
   return (
     <div className="flex justify-start">
-      <div className="mr-2 flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full bg-gray-300 text-xs font-bold text-gray-600 dark:bg-gray-600 dark:text-gray-200">
+      <div className="mr-2 hidden h-8 w-8 flex-shrink-0 items-center justify-center rounded-full bg-gray-300 text-xs font-bold text-gray-600 dark:bg-gray-600 dark:text-gray-200 sm:flex">
         AI
       </div>
-      <div className="flex max-w-[75%] flex-col">
+      <div className="flex max-w-full flex-col sm:max-w-[75%]">
         <div className="mb-1 flex flex-wrap gap-1 text-[10px] uppercase tracking-wide text-gray-400 dark:text-gray-500">
           <span className="rounded-full bg-blue-100 px-2 py-0.5 text-blue-700 dark:bg-blue-900/30 dark:text-blue-200">
             Working
@@ -224,20 +224,20 @@ export default function MessageList({
   }, [messages, processingStatus])
 
   return (
-    <main className="flex-1 overflow-y-auto px-4 py-6">
-      <div className="mx-auto flex max-w-2xl flex-col gap-4">
+    <main className="min-h-0 flex-1 overflow-y-auto px-3 py-4 sm:px-4 sm:py-6">
+      <div className="mx-auto flex w-full max-w-3xl flex-col gap-4">
         {messages.length === 0 && !processingStatus && (
-          <div className="my-auto py-8 text-center animate-fade-in">
-            <h2 className="bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-3xl font-extrabold tracking-tight text-transparent dark:from-blue-400 dark:to-indigo-400 font-heading">
+          <div className="my-auto py-8 text-center animate-fade-in sm:py-10">
+            <h2 className="bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-3xl font-extrabold tracking-tight text-transparent dark:from-blue-400 dark:to-indigo-400 font-heading sm:text-4xl">
               Welcome to LLM Chatroom v2
             </h2>
-            <p className="mx-auto mt-2.5 max-w-md text-sm text-gray-500 dark:text-gray-400">
+            <p className="mx-auto mt-2.5 max-w-md text-sm leading-relaxed text-gray-500 dark:text-gray-400 sm:text-base">
               An advanced AI assistant utilizing local tool execution (MCP), long-term keyword memory, and smart routing.
             </p>
 
             {/* Capability Cards */}
             <div className="mt-8 grid grid-cols-1 gap-3.5 sm:grid-cols-3 text-left">
-              <div className="rounded-2xl border border-gray-150 bg-white p-4 shadow-sm transition hover:shadow-md dark:border-gray-800 dark:bg-gray-800/40">
+              <div className="rounded-lg border border-gray-150 bg-white p-4 shadow-sm transition hover:shadow-md dark:border-gray-800 dark:bg-gray-800/40">
                 <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-sky-50 text-sky-600 dark:bg-sky-950/40 dark:text-sky-300">
                   <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-4 h-4">
                     <path strokeLinecap="round" strokeLinejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" />
@@ -249,7 +249,7 @@ export default function MessageList({
                 </p>
               </div>
 
-              <div className="rounded-2xl border border-gray-150 bg-white p-4 shadow-sm transition hover:shadow-md dark:border-gray-800 dark:bg-gray-800/40">
+              <div className="rounded-lg border border-gray-150 bg-white p-4 shadow-sm transition hover:shadow-md dark:border-gray-800 dark:bg-gray-800/40">
                 <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-violet-50 text-violet-600 dark:bg-violet-950/40 dark:text-violet-300">
                   <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-4 h-4">
                     <path strokeLinecap="round" strokeLinejoin="round" d="M20.25 6.375c0 2.278-3.694 4.125-8.25 4.125S3.75 8.653 3.75 6.375m16.5 0c0-2.278-3.694 4.125-8.25-4.125S3.75 4.097 3.75 6.375m16.5 0v11.25c0 2.278-3.694 4.125-8.25 4.125s-8.25-1.847-8.25-4.125V6.375m16.5 0v3.75m-16.5-3.75v3.75m16.5 0v3.75C20.25 16.153 16.556 18 12 18s-8.25-1.847-8.25-4.125v-3.75m16.5 0v3.75" />
@@ -261,7 +261,7 @@ export default function MessageList({
                 </p>
               </div>
 
-              <div className="rounded-2xl border border-gray-150 bg-white p-4 shadow-sm transition hover:shadow-md dark:border-gray-800 dark:bg-gray-800/40">
+              <div className="rounded-lg border border-gray-150 bg-white p-4 shadow-sm transition hover:shadow-md dark:border-gray-800 dark:bg-gray-800/40">
                 <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-amber-50 text-amber-600 dark:bg-amber-950/40 dark:text-amber-300">
                   <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-4 h-4">
                     <path strokeLinecap="round" strokeLinejoin="round" d="M12 21a9.004 9.004 0 0 0 8.716-6.747M12 21a9.004 9.004 0 0 1-8.716-6.747M12 21c2.485 0 4.5-4.03 4.5-9S14.485 3 12 3m0 18c-2.485 0-4.5-4.03-4.5-9s2.015-9 4.5-9m0 0a9.015 9.015 0 0 1 8.716 2.253M12 3a9.015 9.015 0 0 0-8.716 2.253M12 12h.008v.008H12V12Z" />
@@ -311,12 +311,12 @@ export default function MessageList({
           return (
             <div key={msg.id} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
               {msg.role === 'assistant' && (
-                <div className="mr-2 flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full bg-gray-300 text-xs font-bold text-gray-600 dark:bg-gray-600 dark:text-gray-200">
+                <div className="mr-2 hidden h-8 w-8 flex-shrink-0 items-center justify-center rounded-full bg-gray-300 text-xs font-bold text-gray-600 dark:bg-gray-600 dark:text-gray-200 sm:flex">
                   AI
                 </div>
               )}
               {msg.role === 'assistant' ? (
-                <div className="flex max-w-[75%] flex-col animate-fade-in">
+                <div className="flex min-w-0 max-w-full flex-col animate-fade-in sm:max-w-[78%]">
                   {(msg.model || msg.routeLabel) && (
                     <div className="mb-1 flex flex-wrap gap-1 text-[10px] uppercase tracking-wide text-gray-400 dark:text-gray-500">
                       {msg.model && (
@@ -331,11 +331,11 @@ export default function MessageList({
                       )}
                     </div>
                   )}
-                  <div className="rounded-2xl rounded-bl-sm bg-white px-4 py-2.5 text-sm leading-relaxed shadow-sm text-gray-800 ring-1 ring-gray-200 dark:bg-gray-800 dark:text-gray-100 dark:ring-gray-700">
+                  <div className="overflow-x-auto rounded-2xl rounded-bl-sm bg-white px-4 py-2.5 text-sm leading-relaxed shadow-sm text-gray-800 ring-1 ring-gray-200 dark:bg-gray-800 dark:text-gray-100 dark:ring-gray-700">
                     <MarkdownContent content={msg.content} />
                   </div>
-                  <div className="mt-1 flex items-center justify-between text-[11px] text-gray-400 dark:text-gray-500">
-                    <div className="pr-4 italic">
+                  <div className="mt-1 flex flex-col gap-1 text-[11px] text-gray-400 dark:text-gray-500 sm:flex-row sm:items-center sm:justify-between">
+                    <div className="min-w-0 italic sm:pr-4">
                       {msg.routeReason &&
                         msg.routeReason !== 'The default model is appropriate for this request.' &&
                         msg.routeReason !== 'Auto routing is disabled.' && (
@@ -348,7 +348,7 @@ export default function MessageList({
                   </div>
                 </div>
               ) : (
-                <div className="max-w-[75%] space-y-2">
+                <div className="max-w-[88%] space-y-2 sm:max-w-[75%]">
                   {msg.attachments && msg.attachments.length > 0 && (
                     <div className="grid grid-cols-2 gap-2 animate-fade-in">
                       {msg.attachments.map((attachment) => (
@@ -369,7 +369,7 @@ export default function MessageList({
                 </div>
               )}
               {msg.role === 'user' && (
-                <div className="ml-2 flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full bg-blue-500 text-xs font-bold text-white">
+                <div className="ml-2 hidden h-8 w-8 flex-shrink-0 items-center justify-center rounded-full bg-blue-500 text-xs font-bold text-white sm:flex">
                   You
                 </div>
               )}
