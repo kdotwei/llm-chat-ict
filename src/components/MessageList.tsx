@@ -169,13 +169,35 @@ function ToolMessageCard({ message }: { message: Message }) {
   if (message.name === 'wolfram_query' && parsed) {
     const pods = Array.isArray(parsed.pods) ? parsed.pods : []
     const error = parsed.error ? String(parsed.error) : null
+    const note = parsed.note ? String(parsed.note) : null
 
     return (
       <div className="rounded-2xl border border-dashed border-red-300 bg-red-50 px-4 py-3 text-sm text-red-950 dark:border-red-850 dark:bg-red-950/30 dark:text-red-100 animate-fade-in">
         <div className="mb-1 text-xs font-semibold uppercase tracking-wide">WolframAlpha Calculation</div>
         <p className="mb-2 text-xs opacity-80">Query: {String(parsed.query ?? '')}</p>
+        
+        {note && (
+          <div className="mb-2.5 rounded-xl bg-red-100/50 px-3 py-2 text-xs text-red-900 dark:bg-red-950/50 dark:text-red-200 leading-relaxed">
+            {note}
+          </div>
+        )}
+
         {error ? (
-          <p className="text-sm text-red-600 dark:text-red-400 font-medium">{error}</p>
+          <div>
+            <p className="text-sm text-red-600 dark:text-red-400 font-medium">{error}</p>
+            <p className="mt-2 text-xs opacity-80">
+              您可以到{' '}
+              <a 
+                href="https://developer.wolframalpha.com/portal/myapps" 
+                target="_blank" 
+                rel="noopener noreferrer" 
+                className="underline hover:text-red-800 dark:hover:text-red-300 font-medium"
+              >
+                WolframAlpha Developer Portal
+              </a>{' '}
+              免費申請您專屬的 AppID 填入設定面板以啟用即時計算。
+            </p>
+          </div>
         ) : pods.length > 0 ? (
           <div className="mt-2 space-y-3">
             {pods.map((pod: any, index: number) => (
