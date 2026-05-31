@@ -62,10 +62,6 @@ export interface Settings {
   toolUseEnabled: boolean
   enabledMcpServers: string[]
   apiUrl: string
-<<<<<<< HEAD
-  provider: 'lm-studio' | 'openai' | 'custom'
-  wolframAppId: string
-=======
   provider: 'lm-studio' | 'lm-studio-remote' | 'openai' | 'custom'
->>>>>>> main
+  wolframAppId: string
 }
