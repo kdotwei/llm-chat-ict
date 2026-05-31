@@ -22,8 +22,19 @@ import { routeModel } from './lib/router'
 
 function buildApiMessages(messages: Message[], settings: Settings, memoryContext: string[]) {
   const enabledTools = getEnabledTools(settings)
+  const now = new Date()
+  const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone || 'Asia/Taipei'
+  const timeString = now.toLocaleString('zh-TW', { hour12: false })
+  const dateString = now.toLocaleDateString('zh-TW')
+  const yearString = String(now.getFullYear())
+
   const systemSections = [
     settings.systemPrompt.trim(),
+    `【當前系統時間與地理資訊】：
+- 本地時間：${timeString}
+- 本地日期：${dateString} (年份基準為 ${yearString} 年)
+- 本地時區：${timezone}
+- 當您需要搜尋「今天」、「今日」、「最新」或「最近」的新聞與時事時，請務必以此日期 (${yearString} 年) 作為構造搜尋關鍵字的唯一年份基準！請完全摒棄您的知識截止年份 (如 2025)，絕對不能使用過期或虛擬的年份作為搜尋詞！`,
     settings.toolUseEnabled && enabledTools.length > 0
       ? `您可以使用一組工具來協助回答。請務必嚴格遵守以下工具使用準則：
 1. 僅在使用者請求明確需要時才調用工具（例如詢問時間、計算數學、搜尋網頁、搜尋記憶）。如果是普通的問候（如 hello, 你好）、閒聊或常識問題，請直接友善地進行對話回覆，絕對不要調用任何工具。
@@ -78,7 +89,7 @@ function buildApiMessages(messages: Message[], settings: Settings, memoryContext
       const isLastToolMessage = history.slice(idx + 1).every((m) => m.role !== 'tool')
       let content = message.content
       if (isLastToolMessage) {
-        content += '\n\n【系統指引】：工具已執行完畢並回覆了數據。請您仔細分析上方的工具數據結果，並用非常親切、詳細且有禮貌的繁體中文為使用者解答。請像一個熱心貼心的秘書一樣詳細說明，絕對不要只回答 Done 或只給予簡短字句！【重要來源規則】：您回答中提及的每一則新聞、事實或報導，都必須在其後附上 Markdown 來源連結（格式為 [來源標題](連結)）。絕對不能出現沒有附上來源的新聞報導！'
+        content += '\n\n【系統指引】：工具已執行完畢。請仔細分析上方工具數據，並用親切、簡明且有禮貌的繁體中文為使用者整理一份簡短的摘要（約2-3個重點即可，切勿冗長）。每一項事實或報導都必須在其後附上 Markdown 來源連結。絕對不能回覆沒有附上來源新聞！格式請務必參照以下結構進行條列：\n- **新聞標題**：簡短說明... [來源標題](網址)\n絕對不要只回答 Done 或給予無意義的字句！'
       }
       return {
         role: 'tool',
@@ -172,14 +183,27 @@ function generateFallbackResponse(messages: Message[]): string {
           lines.push(`${summary}\n`)
         }
         if (sources.length > 0) {
-          lines.push(`參考來源：`)
-          sources.forEach((src: Record<string, unknown>) => {
-            const title = String(src.title || '網頁連結')
+          lines.push(`已為您彙整以下最新相關報導之精簡摘要：\n`)
+          sources.slice(0, 3).forEach((src: Record<string, unknown>) => {
+            const title = String(src.title || '')
+            const snippet = String(src.snippet || '')
             const url = String(src.url || '')
-            if (url) {
-              lines.push(`- [${title}](${url})`)
+            if (title) {
+              const cleanSnippet = snippet.replace(/\s+/g, ' ').trim()
+              lines.push(`- **${title}**：${cleanSnippet.slice(0, 80)}${cleanSnippet.length > 80 ? '...' : ''} [閱讀來源](${url})`)
             }
           })
+
+          if (sources.length > 3) {
+            lines.push(`\n其他相關來源：`)
+            sources.slice(3).forEach((src: Record<string, unknown>) => {
+              const title = String(src.title || '網頁連結')
+              const url = String(src.url || '')
+              if (url) {
+                lines.push(`- [${title}](${url})`)
+              }
+            })
+          }
         } else {
           lines.push(`（無搜尋到具體網頁來源）`)
         }
