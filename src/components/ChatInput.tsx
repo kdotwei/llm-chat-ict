@@ -56,7 +56,6 @@ export default function ChatInput({
 
   const needsKey = provider === 'openai'
   const isSendDisabled = (!input.trim() && attachments.length === 0) || isStreaming || (needsKey && !apiKey)
-  const activeToolServers = availableToolServers.filter((server) => enabledToolIds.includes(server.id))
 
   function formatToolLabel(name: string) {
     return name.replace(/\s+Server$/i, '')
@@ -65,25 +64,31 @@ export default function ChatInput({
   return (
     <footer className="border-t border-gray-200 bg-white px-3 py-2 shadow-[0_-1px_4px_rgba(0,0,0,0.06)] dark:border-gray-700 dark:bg-gray-800 sm:px-4 sm:py-3">
       <form className="mx-auto max-w-3xl" onSubmit={(e) => { e.preventDefault(); onSubmit() }}>
-        <div className="mb-1.5 flex min-w-0 items-center gap-1.5 overflow-x-auto text-[10px] text-gray-400 dark:text-gray-500 sm:mb-2">
-          <span className="flex-shrink-0 font-semibold uppercase tracking-wide">Tools</span>
-          {!toolUseEnabled ? (
-            <span className="flex-shrink-0 rounded-full bg-gray-100 px-2 py-0.5 font-medium text-gray-500 dark:bg-gray-700 dark:text-gray-300">
-              Off
-            </span>
-          ) : activeToolServers.length > 0 ? (
-            activeToolServers.map((server) => (
-              <span
-                key={server.id}
-                title={server.description}
-                className="flex-shrink-0 rounded-full bg-blue-50 px-2 py-0.5 font-medium text-blue-700 ring-1 ring-blue-100 dark:bg-blue-950/30 dark:text-blue-200 dark:ring-blue-900/40"
-              >
-                {formatToolLabel(server.name)}
-              </span>
-            ))
+        <div className="mb-1.5 flex min-w-0 items-center gap-1.5 overflow-x-auto whitespace-nowrap text-[10px] text-gray-400 dark:text-gray-500 sm:mb-2">
+          <span className="flex-shrink-0 font-semibold uppercase tracking-wide">
+            Tools
+          </span>
+          {availableToolServers.length > 0 ? (
+            availableToolServers.map((server) => {
+              const isEnabled = toolUseEnabled && enabledToolIds.includes(server.id)
+              return (
+                <span
+                  key={server.id}
+                  title={`${formatToolLabel(server.name)}: ${isEnabled ? 'Enabled' : 'Disabled'} - ${server.description}`}
+                  className={`inline-flex max-w-[8.5rem] flex-shrink-0 items-center gap-1 rounded-full px-2 py-0.5 font-medium ring-1 ${
+                    isEnabled
+                      ? 'bg-blue-50 text-blue-700 ring-blue-100 dark:bg-blue-950/30 dark:text-blue-200 dark:ring-blue-900/40'
+                      : 'bg-gray-100/70 text-gray-400 opacity-70 ring-gray-200 dark:bg-gray-700/40 dark:text-gray-500 dark:ring-gray-700'
+                  }`}
+                >
+                  <span className={`h-1.5 w-1.5 flex-shrink-0 rounded-full ${isEnabled ? 'bg-blue-500' : 'bg-gray-400/70 dark:bg-gray-500'}`} />
+                  <span className="min-w-0 truncate">{formatToolLabel(server.name)}</span>
+                </span>
+              )
+            })
           ) : (
-            <span className="flex-shrink-0 rounded-full bg-amber-50 px-2 py-0.5 font-medium text-amber-700 ring-1 ring-amber-100 dark:bg-amber-950/30 dark:text-amber-200 dark:ring-amber-900/40">
-              None
+            <span className="flex-shrink-0 rounded-full bg-gray-100 px-2 py-0.5 font-medium text-gray-500 dark:bg-gray-700 dark:text-gray-300">
+              None available
             </span>
           )}
         </div>
