@@ -54,9 +54,10 @@ export const DEFAULT_SETTINGS: Settings = {
   longTermMemoryEnabled: true,
   maxMemoryItems: 8,
   toolUseEnabled: true,
-  enabledMcpServers: ['utilities', 'memory'],
+  enabledMcpServers: ['utilities', 'memory', 'wolframalpha'],
   apiUrl: (import.meta.env.VITE_API_URL as string | undefined) ?? 'http://127.0.0.1:1234/v1/chat/completions',
   provider: (import.meta.env.VITE_API_URL as string | undefined) ? 'custom' : 'lm-studio',
+  wolframAppId: '',
 }
 
 export function loadSettings(): Settings {

@@ -39,6 +39,7 @@ function formatToolName(name?: string) {
   if (name === 'memory_search') return 'Memory lookup'
   if (name === 'utilities_time_now') return 'Time check'
   if (name === 'utilities_calculate') return 'Calculator'
+  if (name === 'wolfram_query') return 'WolframAlpha'
   return name.replace(/_/g, ' ')
 }
 
@@ -165,6 +166,36 @@ function ToolMessageCard({ message }: { message: Message }) {
     )
   }
 
+  if (message.name === 'wolfram_query' && parsed) {
+    const pods = Array.isArray(parsed.pods) ? parsed.pods : []
+    const error = parsed.error ? String(parsed.error) : null
+
+    return (
+      <div className="rounded-2xl border border-dashed border-red-300 bg-red-50 px-4 py-3 text-sm text-red-950 dark:border-red-850 dark:bg-red-950/30 dark:text-red-100 animate-fade-in">
+        <div className="mb-1 text-xs font-semibold uppercase tracking-wide">WolframAlpha Calculation</div>
+        <p className="mb-2 text-xs opacity-80">Query: {String(parsed.query ?? '')}</p>
+        {error ? (
+          <p className="text-sm text-red-600 dark:text-red-400 font-medium">{error}</p>
+        ) : pods.length > 0 ? (
+          <div className="mt-2 space-y-3">
+            {pods.map((pod: any, index: number) => (
+              <div key={`${message.id}-${index}`} className="rounded-lg bg-white/70 px-3 py-2 dark:bg-white/5">
+                <div className="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wide">
+                  {pod.title}
+                </div>
+                <pre className="mt-1 overflow-x-auto whitespace-pre-wrap break-words font-mono text-xs leading-relaxed text-gray-800 dark:text-gray-200">
+                  {pod.content}
+                </pre>
+              </div>
+            ))}
+          </div>
+        ) : (
+          <p className="text-sm opacity-80">No scientific results returned.</p>
+        )}
+      </div>
+    )
+  }
+
   return (
     <div className="rounded-2xl border border-dashed border-amber-300 bg-amber-50 px-4 py-3 text-xs text-amber-900 dark:border-amber-700 dark:bg-amber-950/30 dark:text-amber-100">
       <div className="mb-1 font-semibold uppercase tracking-wide">{formatToolName(message.name)}</div>
@@ -282,7 +313,7 @@ export default function MessageList({
               <div className="flex flex-col gap-2">
                 {[
                   { text: 'What is the current time?', desc: 'Invoke time lookup utility' },
-                  { text: 'Calculate the result of: (48 * 12) / 3', desc: 'Verify local calculator engine' },
+                  { text: 'Solve x^2 + 5x + 6 = 0 using WolframAlpha', desc: 'Advanced math reasoning calculation' },
                   { text: 'Search Google News for latest technology news', desc: 'Perform live web news aggregation' },
                   { text: 'Remember that my name is Kevin and I study React', desc: 'Save facts to long-term memory' },
                   { text: 'What is my name and what do I study?', desc: 'Retrieve facts from memory' },
