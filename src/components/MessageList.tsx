@@ -107,20 +107,33 @@ function ToolMessageCard({ message }: { message: Message }) {
           {String(parsed.summary ?? 'No summary returned.')}
         </p>
         {sources.length > 0 ? (
-          <div className="mt-3 space-y-2">
-            {sources.slice(0, 4).map((source, index) => (
+          <div className="mt-3 grid grid-cols-1 gap-2 sm:grid-cols-2">
+            {sources.map((source, index) => (
               <a
                 key={`${message.id}-${index}`}
                 href={source.url}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="block rounded-xl border border-amber-200 bg-white/80 px-3 py-2 transition hover:-translate-y-0.5 hover:border-amber-300 hover:bg-white focus:outline-none focus:ring-2 focus:ring-amber-400/60 dark:border-amber-800/60 dark:bg-white/5 dark:hover:border-amber-700 dark:hover:bg-white/10"
+                className="block rounded-lg border border-amber-200 bg-white/70 px-2.5 py-1.5 transition hover:-translate-y-0.5 hover:border-amber-300 hover:bg-white focus:outline-none focus:ring-2 focus:ring-amber-400/60 dark:border-amber-750 dark:bg-white/5 dark:hover:border-amber-600 dark:hover:bg-white/10"
               >
-                <div className="text-sm font-medium">{source.title || `Source ${index + 1}`}</div>
-                {source.snippet && <p className="mt-1 text-xs opacity-80">{source.snippet}</p>}
-                <span className="mt-2 inline-flex rounded-full bg-amber-100 px-2.5 py-1 text-[11px] font-medium text-amber-800 dark:bg-amber-900/40 dark:text-amber-100">
-                  {`來源${index + 1}`}
-                </span>
+                <div className="flex items-center justify-between gap-1.5">
+                  <span className="inline-flex items-center rounded bg-amber-100 px-1.5 py-0.5 text-[10px] font-semibold text-amber-800 dark:bg-amber-900/40 dark:text-amber-200">
+                    來源 {index + 1}
+                  </span>
+                  {source.source && (
+                    <span className="text-[10px] opacity-75 font-medium truncate max-w-[120px] text-gray-500 dark:text-gray-400">
+                      {source.source}
+                    </span>
+                  )}
+                </div>
+                <div className="mt-1 text-xs font-semibold text-gray-800 dark:text-gray-200 line-clamp-1">
+                  {source.title || `Source ${index + 1}`}
+                </div>
+                {source.snippet && (
+                  <p className="mt-0.5 text-[11px] opacity-75 leading-snug line-clamp-2 text-gray-600 dark:text-gray-400">
+                    {source.snippet}
+                  </p>
+                )}
               </a>
             ))}
           </div>

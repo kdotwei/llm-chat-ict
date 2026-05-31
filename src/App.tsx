@@ -28,9 +28,10 @@ function buildApiMessages(messages: Message[], settings: Settings, memoryContext
       ? `您可以使用一組工具來協助回答。請務必嚴格遵守以下工具使用準則：
 1. 僅在使用者請求明確需要時才調用工具（例如詢問時間、計算數學、搜尋網頁、搜尋記憶）。如果是普通的問候（如 hello, 你好）、閒聊或常識問題，請直接友善地進行對話回覆，絕對不要調用任何工具。
 2. 當您決定調用工具時，該輪回覆必須包含工具調用（tool_calls），您可以簡單說明您正在使用工具，但請保持簡短。
-3. 當工具執行完畢並回覆數據給您後，您會在下一輪對話中收到結果。您必須仔細分析工具回覆的數據，並為使用者撰寫一份親切、詳細且完整的繁體中文自然語言回覆，將工具取得的數據完美融入您的答案中。請像一個熱心、有禮貌的助手一樣詳細解釋，絕對不要敷衍回覆「Done」或只給予簡短字句。`
+3. 當工具執行完畢並回覆數據給您後，您會在下一輪對話中收到結果。您必須仔細分析工具回覆的數據，並為使用者撰寫一份親切、詳細且完整的繁體中文自然語言回覆，將工具取得的數據完美融入您的答案中。請像一個熱心、有禮貌的助手一樣詳細解釋，絕對不要敷衍回覆「Done」或只給予簡短字句。
+【來源參照規定】：您所引述的任何新聞、事實或報導，都必須在其後方附上對應的來源連結，絕對不能回覆沒有附上來源連結的新聞。格式請務必使用 Markdown 連結（例如 [來源名稱](網址)）。`
       : '',
-    'If tool results include URLs or source fields, summarize them directly in chat and cite the sources as Markdown links. If a web-search tool reports no usable results or a network/provider failure, say that clearly instead of inventing news.',
+    'If tool results include URLs or source fields, summarize them directly in chat and cite the sources as Markdown links. CRITICAL RULE: For every single news article, fact, or event you mention in your response, you MUST append its source as a Markdown link (e.g., [Source Name](URL)). You are strictly forbidden from mentioning any news story or event that does not have a corresponding source URL in the tool results. If a web-search tool reports no usable results or a network/provider failure, say that clearly instead of inventing news.',
     memoryContext.length > 0
       ? `Relevant long-term memory:\n${memoryContext.map((item) => `- ${item}`).join('\n')}`
       : '',
@@ -44,7 +45,7 @@ function buildApiMessages(messages: Message[], settings: Settings, memoryContext
   ]
 
   const history = buildHistorySlice(messages, settings.memoryWindow)
-  const apiMessages = history.map((message) => {
+  const apiMessages = history.map((message, idx) => {
     if (message.role === 'user' && message.attachments && message.attachments.length > 0) {
       return {
         role: 'user',
@@ -74,11 +75,16 @@ function buildApiMessages(messages: Message[], settings: Settings, memoryContext
     }
 
     if (message.role === 'tool') {
+      const isLastToolMessage = history.slice(idx + 1).every((m) => m.role !== 'tool')
+      let content = message.content
+      if (isLastToolMessage) {
+        content += '\n\n【系統指引】：工具已執行完畢並回覆了數據。請您仔細分析上方的工具數據結果，並用非常親切、詳細且有禮貌的繁體中文為使用者解答。請像一個熱心貼心的秘書一樣詳細說明，絕對不要只回答 Done 或只給予簡短字句！【重要來源規則】：您回答中提及的每一則新聞、事實或報導，都必須在其後附上 Markdown 來源連結（格式為 [來源標題](連結)）。絕對不能出現沒有附上來源的新聞報導！'
+      }
       return {
         role: 'tool',
         tool_call_id: message.toolCallId,
         name: message.name,
-        content: message.content,
+        content: content,
       }
     }
 
@@ -90,15 +96,109 @@ function buildApiMessages(messages: Message[], settings: Settings, memoryContext
 
   const finalMessages = [...systemMessages, ...apiMessages]
 
-  const hasToolResults = messages.some((m) => m.role === 'tool')
-  if (hasToolResults) {
-    finalMessages.push({
-      role: 'system',
-      content: '【系統指引】：工具已執行完畢並回覆了數據。請您仔細分析上方的工具數據結果，並用非常親切、詳細且有禮貌的繁體中文為使用者解答。請像一個熱心貼心的秘書一樣詳細說明，絕對不要只回答 Done 或只給予簡短字句！'
-    })
+  return finalMessages
+}
+
+function generateFallbackResponse(messages: Message[]): string {
+  const lastAssistantIdx = [...messages]
+    .reverse()
+    .findIndex((m) => m.role === 'assistant' && m.toolCalls && m.toolCalls.length > 0)
+  if (lastAssistantIdx === -1) {
+    return '已處理完成。'
+  }
+  const actualAssistantIdx = messages.length - 1 - lastAssistantIdx
+  const assistantMsg = messages[actualAssistantIdx]
+  const toolCalls = assistantMsg.toolCalls || []
+
+  const toolResults: Array<{ name: string; content: string; args: Record<string, unknown> }> = []
+  for (const tc of toolCalls) {
+    const toolMsg = messages.find((m) => m.role === 'tool' && m.toolCallId === tc.id)
+    if (toolMsg) {
+      let args: Record<string, unknown> = {}
+      try {
+        args = JSON.parse(tc.arguments || '{}') as Record<string, unknown>
+      } catch (_) {}
+      toolResults.push({
+        name: tc.name,
+        content: toolMsg.content,
+        args,
+      })
+    }
   }
 
-  return finalMessages
+  if (toolResults.length === 0) {
+    return '動作已執行完畢。'
+  }
+
+  const lines: string[] = []
+
+  for (const result of toolResults) {
+    try {
+      const data = JSON.parse(result.content) as Record<string, unknown>
+
+      if (result.name === 'utilities_time_now') {
+        const timeZone = String(data.timezone || '本地時區')
+        const local = String(data.local || '')
+        let formattedTime = local
+        if (local) {
+          const dt = new Date(local)
+          if (!isNaN(dt.getTime())) {
+            formattedTime = dt.toLocaleString('zh-TW', { hour12: false })
+          }
+        }
+        lines.push(`目前查詢到的時間是：**${formattedTime}** (${timeZone})。`)
+      } else if (result.name === 'utilities_calculate') {
+        const expr = String(result.args.expression || data.expression || '')
+        const val = String(data.result ?? '')
+        lines.push(`經計算，算式 \`${expr}\` 的結果為 **${val}**。`)
+      } else if (result.name === 'memory_search') {
+        const query = String(result.args.query || data.query || '')
+        const matches = Array.isArray(data.matches) ? data.matches : []
+        if (matches.length > 0) {
+          lines.push(`已搜尋長期的記憶庫，關於「${query}」的相關內容如下：`)
+          matches.forEach((m: Record<string, unknown>, idx: number) => {
+            lines.push(`${idx + 1}. ${m.text}`)
+          })
+        } else {
+          lines.push(`已搜尋長期的記憶庫，目前沒有找到與「${query}」相關的記憶記錄。`)
+        }
+      } else if (result.name === 'browser_search_web') {
+        const query = String(result.args.query || data.query || '')
+        const summary = String(data.summary || '')
+        const sources = Array.isArray(data.sources) ? data.sources : []
+
+        lines.push(`針對「${query}」進行網頁搜尋，結果如下：\n`)
+        if (summary && !summary.startsWith('Connected successfully')) {
+          lines.push(`${summary}\n`)
+        }
+        if (sources.length > 0) {
+          lines.push(`參考來源：`)
+          sources.forEach((src: Record<string, unknown>) => {
+            const title = String(src.title || '網頁連結')
+            const url = String(src.url || '')
+            if (url) {
+              lines.push(`- [${title}](${url})`)
+            }
+          })
+        } else {
+          lines.push(`（無搜尋到具體網頁來源）`)
+        }
+      } else if (result.name === 'browser_open_url') {
+        const url = String(result.args.url || data.url || '')
+        lines.push(`已成功在瀏覽器新分頁中開啟網頁：[${url}](${url})。`)
+      } else {
+        lines.push(`已執行「${result.name}」工具，結果如下：\n\n${result.content}`)
+      }
+    } catch (_) {
+      if (result.name === 'utilities_time_now') {
+        lines.push(`目前的時間已經成功取得：${result.content}`)
+      } else {
+        lines.push(`已執行「${result.name}」工具，結果如下：\n\n${result.content}`)
+      }
+    }
+  }
+
+  return lines.join('\n')
 }
 
 async function fileToAttachment(file: File): Promise<Attachment> {
@@ -357,11 +457,17 @@ export default function App() {
         }))
 
       if (normalizedToolCalls.length === 0) {
-        if (!accumulatedText) {
+        const isLazyDone = !accumulatedText || 
+          /^(done|done\.|done!|完成|完成。|好了|執行完畢|執行完畢。)$/i.test(accumulatedText.trim())
+        if (isLazyDone) {
+          const hasToolsInHistory = workingHistory.some((m) => m.role === 'tool')
+          const finalContent = hasToolsInHistory
+            ? generateFallbackResponse(workingHistory)
+            : (accumulatedText || 'Done.')
           setMessages((prev) =>
             prev.map((msg) =>
               msg.id === assistantId
-                ? { ...msg, content: 'Done.' }
+                ? { ...msg, content: finalContent }
                 : msg,
             ),
           )
