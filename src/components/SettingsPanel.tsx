@@ -271,6 +271,19 @@ export default function SettingsPanel({
                 </button>
               </div>
             </div>
+
+            <div>
+              <label className="mb-1 block text-[11px] font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">
+                WolframAlpha AppID
+              </label>
+              <input
+                type="text"
+                value={draft.wolframAppId || ''}
+                onChange={(e) => patch('wolframAppId', e.target.value)}
+                placeholder="e.g. 2KQQ77-8Y6V9YW7XY"
+                className="w-full rounded-xl border border-gray-300 bg-white px-3 py-2 text-sm outline-none focus:border-blue-400 focus:ring-2 focus:ring-blue-100 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100"
+              />
+            </div>
           </div>
 
           <div>
@@ -357,7 +370,7 @@ export default function SettingsPanel({
               />
             </div>
             <div className="space-y-2">
-              {['utilities', 'memory', 'browser'].map((serverId) => {
+              {['utilities', 'memory', 'browser', 'wolframalpha'].map((serverId) => {
                 const server = enabledServers.find((item) => item.id === serverId)
                 const isEnabled = draft.enabledMcpServers.includes(serverId)
                 const name = server?.name ?? `${serverId} server`

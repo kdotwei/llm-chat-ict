@@ -268,6 +268,19 @@ function generateFallbackResponse(messages: Message[]): string {
       } else if (result.name === 'browser_open_url') {
         const url = String(result.args.url || data.url || '')
         lines.push(`已成功在瀏覽器新分頁中開啟網頁：[${url}](${url})。`)
+      } else if (result.name === 'wolfram_query') {
+        const query = String(result.args.query || '')
+        if (data.error) {
+          lines.push(`計算引擎 WolframAlpha 在處理「${query}」時發生錯誤：${data.error}`)
+        } else if (data.success && Array.isArray(data.pods)) {
+          lines.push(`計算引擎 WolframAlpha 針對「${query}」的分析計算結果如下：\n`)
+          data.pods.forEach((pod: any) => {
+            lines.push(`### ${pod.title}`)
+            lines.push(`${pod.content}\n`)
+          })
+        } else {
+          lines.push(`計算引擎 WolframAlpha 執行完畢，但未返回具體結果。`)
+        }
       } else {
         lines.push(`已執行「${result.name}」工具，結果如下：\n\n${result.content}`)
       }
@@ -591,10 +604,12 @@ export default function App() {
             setProcessingStatus('Checking the current time...')
           } else if (toolCall.name === 'browser_open_url') {
             setProcessingStatus('Opening the requested page...')
+          } else if (toolCall.name === 'wolfram_query') {
+            setProcessingStatus(`Querying WolframAlpha for “${String(args.query ?? '').trim()}”...`)
           } else {
             setProcessingStatus(`Running ${toolCall.name}...`)
           }
-          toolResult = await executeTool(toolCall.name, args, { memories })
+          toolResult = await executeTool(toolCall.name, args, { memories, settings })
         } catch (error) {
           const message = error instanceof Error ? error.message : 'Unknown tool error'
           toolResult = JSON.stringify({ error: message })

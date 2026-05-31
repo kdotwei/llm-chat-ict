@@ -63,4 +63,5 @@ export interface Settings {
   enabledMcpServers: string[]
   apiUrl: string
   provider: 'lm-studio' | 'lm-studio-remote' | 'openai' | 'custom'
+  wolframAppId: string
 }
