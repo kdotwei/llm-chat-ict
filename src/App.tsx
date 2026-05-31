@@ -9,6 +9,8 @@ import {
   loadSettings,
   saveMemories,
   getModelsUrl,
+  getChatCompletionsUrl,
+  isLmStudioProvider,
 } from './constants'
 import { useDarkMode } from './hooks/useDarkMode'
 import Header from './components/Header'
@@ -22,29 +24,62 @@ import { routeModel } from './lib/router'
 
 function buildApiMessages(messages: Message[], settings: Settings, memoryContext: string[]) {
   const enabledTools = getEnabledTools(settings)
-  const systemSections = [
-    settings.systemPrompt.trim(),
-    settings.toolUseEnabled && enabledTools.length > 0
-      ? `您可以使用一組工具來協助回答。請務必嚴格遵守以下工具使用準則：
+  const history = buildHistorySlice(messages, settings.memoryWindow)
+  const hasToolResults = history.some((m) => m.role === 'tool')
+
+  const now = new Date()
+  const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone || 'Asia/Taipei'
+  const timeString = now.toLocaleString('zh-TW', { hour12: false })
+  const dateString = now.toLocaleDateString('zh-TW')
+  const yearString = String(now.getFullYear())
+
+  const systemSections: string[] = []
+  systemSections.push(settings.systemPrompt.trim())
+
+  if (hasToolResults) {
+    // Optimization for tool results turn (minimizing context overhead):
+    // Skip tool use rules 1 and 2, skip long-term memory context.
+    // Inject highly focused summary constraints.
+    systemSections.push(
+      `【當前系統時間與地理資訊】：
+- 本地時間：${timeString}
+- 本地時區：${timezone}
+- 本地日期：${dateString}`,
+      `【系統指引 - 工具結果彙整】：
+工具已執行完畢並回覆了數據結果。請仔細分析對話歷史中的工具數據，並用極其親切、簡明且有禮貌的繁體中文為使用者整理一份簡短的摘要（約2-3個重點即可，切勿冗長）。
+【重要來源規則】：您回答中提及的每一則新聞、事實或報導，都必須在其後附上 Markdown 來源連結。絕對不能回覆沒有附上來源的新聞！格式請務必參照以下結構進行條列：
+- **新聞標題**：簡短說明... [來源標題](網址)
+絕對不要只回答 Done 或給予無意義的字句！`
+    )
+  } else {
+    // Standard turn (normal chatting, preparing to decide tool calls):
+    systemSections.push(
+      `【當前系統時間與地理資訊】：
+- 本地時間：${timeString}
+- 本地日期：${dateString} (年份基準為 ${yearString} 年)
+- 本地時區：${timezone}
+- 當您需要搜尋「今天」、「今日」、「最新」或「最近」的新聞與時事時，請務必以此日期 (${yearString} 年) 作為構造搜尋關鍵字的唯一年份基準！請完全摒棄您的知識截止年份 (如 2025)，絕對不能使用過期或虛擬的年份作為搜尋詞！`,
+      settings.toolUseEnabled && enabledTools.length > 0
+        ? `您可以使用一組工具來協助回答。請務必嚴格遵守以下工具使用準則：
 1. 僅在使用者請求明確需要時才調用工具（例如詢問時間、計算數學、搜尋網頁、搜尋記憶）。如果是普通的問候（如 hello, 你好）、閒聊或常識問題，請直接友善地進行對話回覆，絕對不要調用任何工具。
 2. 當您決定調用工具時，該輪回覆必須包含工具調用（tool_calls），您可以簡單說明您正在使用工具，但請保持簡短。
 3. 當工具執行完畢並回覆數據給您後，您會在下一輪對話中收到結果。您必須仔細分析工具回覆的數據，並為使用者撰寫一份親切、詳細且完整的繁體中文自然語言回覆，將工具取得的數據完美融入您的答案中。請像一個熱心、有禮貌的助手一樣詳細解釋，絕對不要敷衍回覆「Done」或只給予簡短字句。
 【來源參照規定】：您所引述的任何新聞、事實或報導，都必須在其後方附上對應的來源連結，絕對不能回覆沒有附上來源連結的新聞。格式請務必使用 Markdown 連結（例如 [來源名稱](網址)）。`
-      : '',
-    'If tool results include URLs or source fields, summarize them directly in chat and cite the sources as Markdown links. CRITICAL RULE: For every single news article, fact, or event you mention in your response, you MUST append its source as a Markdown link (e.g., [Source Name](URL)). You are strictly forbidden from mentioning any news story or event that does not have a corresponding source URL in the tool results. If a web-search tool reports no usable results or a network/provider failure, say that clearly instead of inventing news.',
-    memoryContext.length > 0
-      ? `Relevant long-term memory:\n${memoryContext.map((item) => `- ${item}`).join('\n')}`
-      : '',
-  ].filter(Boolean)
+        : '',
+      'If tool results include URLs or source fields, summarize them directly in chat and cite the sources as Markdown links. CRITICAL RULE: For every single news article, fact, or event you mention in your response, you MUST append its source as a Markdown link (e.g., [Source Name](URL)). You are strictly forbidden from mentioning any news story or event that does not have a corresponding source URL in the tool results. If a web-search tool reports no usable results or a network/provider failure, say that clearly instead of inventing news.',
+      memoryContext.length > 0
+        ? `Relevant long-term memory:\n${memoryContext.map((item) => `- ${item}`).join('\n')}`
+        : ''
+    )
+  }
 
-  const systemMessages: Array<Record<string, unknown>> = [
+  const systemMessages = [
     {
       role: 'system',
-      content: systemSections.join('\n\n'),
+      content: systemSections.filter(Boolean).join('\n\n'),
     },
   ]
 
-  const history = buildHistorySlice(messages, settings.memoryWindow)
   const apiMessages = history.map((message, idx) => {
     if (message.role === 'user' && message.attachments && message.attachments.length > 0) {
       return {
@@ -77,8 +112,42 @@ function buildApiMessages(messages: Message[], settings: Settings, memoryContext
     if (message.role === 'tool') {
       const isLastToolMessage = history.slice(idx + 1).every((m) => m.role !== 'tool')
       let content = message.content
+      
+      // Token optimization: Compress tool outputs before passing them to the API
+      if (message.name === 'browser_search_web') {
+        try {
+          const parsed = JSON.parse(message.content)
+          const sources = Array.isArray(parsed.sources) ? parsed.sources : []
+          const summary = parsed.summary || ''
+          
+          let compressed = `搜尋查詢: ${parsed.query || ''}\n`
+          if (summary && !summary.startsWith('Connected successfully')) {
+            compressed += `網頁摘要: ${summary}\n`
+          }
+          compressed += `找到 ${sources.length} 則新聞來源：\n`
+          sources.forEach((src: any, index: number) => {
+            compressed += `[來源 ${index + 1}] 標題: ${src.title || ''} | 網址: ${src.url || ''} | 大綱: ${src.snippet || ''}\n`
+          })
+          content = compressed
+        } catch (_) {}
+      } else if (message.name === 'memory_search') {
+        try {
+          const parsed = JSON.parse(message.content)
+          const matches = Array.isArray(parsed.matches) ? parsed.matches : []
+          let compressed = `記憶搜尋: ${parsed.query || ''}\n`
+          if (matches.length > 0) {
+            matches.forEach((m: any) => {
+              compressed += `- ${m.text}\n`
+            })
+          } else {
+            compressed += `未找到相關長期記憶。\n`
+          }
+          content = compressed
+        } catch (_) {}
+      }
+
       if (isLastToolMessage) {
-        content += '\n\n【系統指引】：工具已執行完畢並回覆了數據。請您仔細分析上方的工具數據結果，並用非常親切、詳細且有禮貌的繁體中文為使用者解答。請像一個熱心貼心的秘書一樣詳細說明，絕對不要只回答 Done 或只給予簡短字句！【重要來源規則】：您回答中提及的每一則新聞、事實或報導，都必須在其後附上 Markdown 來源連結（格式為 [來源標題](連結)）。絕對不能出現沒有附上來源的新聞報導！'
+        content += '\n\n【系統指引】：工具已執行完畢。請仔細分析上方工具數據，並用親切、簡明且有禮貌的繁體中文為使用者整理一份簡短的摘要（約2-3個重點即可，切勿冗長）。每一項事實或報導都必須在其後附上 Markdown 來源連結。絕對不能回覆沒有附上來源新聞！格式請務必參照以下結構進行條列：\n- **新聞標題**：簡短說明... [來源標題](網址)\n絕對不要只回答 Done 或給予無意義的字句！'
       }
       return {
         role: 'tool',
@@ -172,14 +241,27 @@ function generateFallbackResponse(messages: Message[]): string {
           lines.push(`${summary}\n`)
         }
         if (sources.length > 0) {
-          lines.push(`參考來源：`)
-          sources.forEach((src: Record<string, unknown>) => {
-            const title = String(src.title || '網頁連結')
+          lines.push(`已為您彙整以下最新相關報導之精簡摘要：\n`)
+          sources.slice(0, 3).forEach((src: Record<string, unknown>) => {
+            const title = String(src.title || '')
+            const snippet = String(src.snippet || '')
             const url = String(src.url || '')
-            if (url) {
-              lines.push(`- [${title}](${url})`)
+            if (title) {
+              const cleanSnippet = snippet.replace(/\s+/g, ' ').trim()
+              lines.push(`- **${title}**：${cleanSnippet.slice(0, 80)}${cleanSnippet.length > 80 ? '...' : ''} [閱讀來源](${url})`)
             }
           })
+
+          if (sources.length > 3) {
+            lines.push(`\n其他相關來源：`)
+            sources.slice(3).forEach((src: Record<string, unknown>) => {
+              const title = String(src.title || '網頁連結')
+              const url = String(src.url || '')
+              if (url) {
+                lines.push(`- [${title}](${url})`)
+              }
+            })
+          }
         } else {
           lines.push(`（無搜尋到具體網頁來源）`)
         }
@@ -262,7 +344,7 @@ export default function App() {
   }, [settings])
 
   useEffect(() => {
-    const isLmStudio = settings.provider === 'lm-studio'
+    const isLmStudio = isLmStudioProvider(settings.provider)
     const needsKey = settings.provider === 'openai'
     if (needsKey && !apiKey) {
       setAvailableModels([])
@@ -321,7 +403,7 @@ export default function App() {
   }
 
   async function callChatApi(body: Record<string, unknown>) {
-    const isLmStudio = settings.provider === 'lm-studio'
+    const isLmStudio = isLmStudioProvider(settings.provider)
     const headers: Record<string, string> = {
       'Content-Type': 'application/json',
     }
@@ -331,7 +413,7 @@ export default function App() {
       headers['Authorization'] = 'Bearer lm-studio'
     }
 
-    const response = await fetch(settings.apiUrl, {
+    const response = await fetch(getChatCompletionsUrl(settings.apiUrl), {
       method: 'POST',
       headers,
       body: JSON.stringify(body),
@@ -608,7 +690,7 @@ export default function App() {
   }
 
   return (
-    <div className="flex h-screen flex-col bg-gray-50 text-gray-900 dark:bg-gray-900 dark:text-gray-100">
+    <div className="flex h-dvh min-h-0 flex-col bg-gray-50 text-gray-900 dark:bg-gray-900 dark:text-gray-100">
       {showKeyModal && (
         <ApiKeyModal
           keyDraft={keyDraft}

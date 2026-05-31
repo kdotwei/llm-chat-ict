@@ -1,6 +1,8 @@
 import { useEffect, useState } from 'react'
 import type { MCPServerDefinition, Settings } from '../types'
-import { PROVIDER_FALLBACK_MODELS, getModelsUrl } from '../constants'
+import { PROVIDER_FALLBACK_MODELS, getModelsUrl, isLmStudioProvider } from '../constants'
+
+type Provider = Settings['provider']
 
 interface SettingsPanelProps {
   show: boolean
@@ -44,7 +46,7 @@ export default function SettingsPanel({
   useEffect(() => {
     if (!show) return
 
-    const isLmStudio = draft.provider === 'lm-studio'
+    const isLmStudio = isLmStudioProvider(draft.provider)
     const needsKey = draft.provider === 'openai'
 
     if (needsKey && !localKey) {
@@ -115,15 +117,17 @@ export default function SettingsPanel({
     setDraft((current) => ({ ...current, [key]: value }))
   }
 
-  function handleProviderChange(provider: 'lm-studio' | 'openai' | 'custom') {
+  function handleProviderChange(provider: Provider) {
     let url = draft.apiUrl
     const presets = PROVIDER_FALLBACK_MODELS[provider] || []
     const defaultModel = presets[0] || ''
     
     if (provider === 'lm-studio') {
-      url = 'http://127.0.0.1:1234/v1/chat/completions'
+      url = 'http://127.0.0.1:1234'
+    } else if (provider === 'lm-studio-remote') {
+      url = 'https://lmstudio.kdotwei.tw'
     } else if (provider === 'openai') {
-      url = 'https://api.openai.com/v1/chat/completions'
+      url = 'https://api.openai.com/v1'
     }
     
     setDraft((current) => ({
@@ -208,10 +212,11 @@ export default function SettingsPanel({
               </label>
               <select
                 value={draft.provider}
-                onChange={(e) => handleProviderChange(e.target.value as any)}
+                onChange={(e) => handleProviderChange(e.target.value as Provider)}
                 className="w-full rounded-xl border border-gray-300 bg-white px-3 py-2 text-sm outline-none focus:border-blue-400 focus:ring-2 focus:ring-blue-100 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100"
               >
                 <option value="lm-studio">LM Studio (Local)</option>
+                <option value="lm-studio-remote">LM Studio (kdotwei.tw)</option>
                 <option value="openai">OpenAI Cloud</option>
                 <option value="custom">Custom Endpoint</option>
               </select>
@@ -219,19 +224,23 @@ export default function SettingsPanel({
 
             <div>
               <label className="mb-1 block text-[11px] font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">
-                API Completions URL
+                API Base URL
               </label>
               <input
                 type="text"
                 value={draft.apiUrl}
                 onChange={(e) => patch('apiUrl', e.target.value)}
+                placeholder="https://lmstudio.kdotwei.tw or http://localhost:1234"
                 className="w-full rounded-xl border border-gray-300 bg-white px-3 py-2 text-sm outline-none focus:border-blue-400 focus:ring-2 focus:ring-blue-100 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100"
               />
+              <p className="mt-1 text-[10px] leading-relaxed text-gray-400 dark:text-gray-500">
+                The app automatically uses /v1/chat/completions and /v1/models.
+              </p>
             </div>
 
             <div>
               <label className="mb-1 block text-[11px] font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">
-                API Key {draft.provider === 'lm-studio' && '(Optional)'}
+                API Key {isLmStudioProvider(draft.provider) && '(Optional)'}
               </label>
               <div className="relative">
                 <input
@@ -241,7 +250,7 @@ export default function SettingsPanel({
                     setLocalKey(e.target.value)
                     onApiKeyChange(e.target.value)
                   }}
-                  placeholder={draft.provider === 'lm-studio' ? 'Not required for local' : 'sk-…'}
+                  placeholder={isLmStudioProvider(draft.provider) ? 'Not required for LM Studio' : 'sk-...'}
                   className="w-full rounded-xl border border-gray-300 bg-white pl-3 pr-10 py-2 text-sm outline-none focus:border-blue-400 focus:ring-2 focus:ring-blue-100 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100"
                 />
                 <button

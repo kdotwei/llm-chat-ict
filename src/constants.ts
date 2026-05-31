@@ -1,5 +1,7 @@
 import type { MemoryEntry, Message, Settings } from './types'
 
+type Provider = Settings['provider']
+
 export const LS_KEY = 'llm_chatroom_api_key'
 export const LS_SETTINGS_KEY = 'llm_chatroom_settings'
 export const LS_MEMORY_KEY = 'llm_chatroom_long_term_memory'
@@ -12,6 +14,13 @@ export const PROVIDER_FALLBACK_MODELS = {
     'llama-3.1-8b-instruct',
     'gemma-2-9b-it',
     'phi-3-mini-4k-instruct'
+  ],
+  'lm-studio-remote': [
+    'qwen/qwen3.5-9b',
+    'qwen2.5-7b-instruct',
+    'qwen2.5-14b-instruct',
+    'llama-3.1-8b-instruct',
+    'gemma-2-9b-it'
   ],
   'openai': [
     'gpt-4o-mini',
@@ -27,18 +36,39 @@ export const PROVIDER_FALLBACK_MODELS = {
   ]
 }
 
+export function isLmStudioProvider(provider: Provider) {
+  return provider === 'lm-studio' || provider === 'lm-studio-remote'
+}
+
+export function getProviderLabel(provider: Provider | string) {
+  if (provider === 'lm-studio') return 'LM Studio Local'
+  if (provider === 'lm-studio-remote') return 'LM Studio Remote'
+  if (provider === 'openai') return 'OpenAI Cloud'
+  return 'Custom Endpoint'
+}
+
+function stripTrailingSlash(value: string) {
+  return value.trim().replace(/\/+$/, '')
+}
+
+export function getChatCompletionsUrl(apiUrl: string): string {
+  const trimmed = stripTrailingSlash(apiUrl)
+  if (!trimmed) return ''
+  if (trimmed.endsWith('/chat/completions')) return trimmed
+  if (trimmed.endsWith('/v1')) return `${trimmed}/chat/completions`
+  return `${trimmed}/v1/chat/completions`
+}
+
 export function getModelsUrl(apiUrl: string): string {
-  const trimmed = apiUrl.trim()
+  const trimmed = stripTrailingSlash(apiUrl)
+  if (!trimmed) return ''
   if (trimmed.endsWith('/chat/completions')) {
     return trimmed.replace(/\/chat\/completions$/, '/models')
   }
-  if (trimmed.endsWith('/chat/completions/')) {
-    return trimmed.replace(/\/chat\/completions\/$/, '/models')
+  if (trimmed.endsWith('/v1')) {
+    return `${trimmed}/models`
   }
-  if (trimmed.endsWith('/v1') || trimmed.endsWith('/v1/')) {
-    return trimmed.replace(/\/v1\/?$/, '/v1/models')
-  }
-  return trimmed.replace(/\/+$/, '') + '/models'
+  return `${trimmed}/v1/models`
 }
 
 export const DEFAULT_SETTINGS: Settings = {
@@ -54,8 +84,13 @@ export const DEFAULT_SETTINGS: Settings = {
   longTermMemoryEnabled: true,
   maxMemoryItems: 8,
   toolUseEnabled: true,
+<<<<<<< HEAD
   enabledMcpServers: ['utilities', 'memory', 'wolframalpha'],
   apiUrl: (import.meta.env.VITE_API_URL as string | undefined) ?? 'http://127.0.0.1:1234/v1/chat/completions',
+=======
+  enabledMcpServers: ['utilities', 'memory'],
+  apiUrl: (import.meta.env.VITE_API_URL as string | undefined) ?? 'http://127.0.0.1:1234',
+>>>>>>> main
   provider: (import.meta.env.VITE_API_URL as string | undefined) ? 'custom' : 'lm-studio',
   wolframAppId: '',
 }

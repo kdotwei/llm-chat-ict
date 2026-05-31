@@ -28,12 +28,17 @@ export default function ChatInput({
 }: ChatInputProps) {
   const textareaRef = useRef<HTMLTextAreaElement>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
+  const baseTextareaHeight = 40
 
   useEffect(() => {
     const el = textareaRef.current
     if (!el) return
+    if (!input) {
+      el.style.height = `${baseTextareaHeight}px`
+      return
+    }
     el.style.height = 'auto'
-    el.style.height = `${el.scrollHeight}px`
+    el.style.height = `${Math.max(baseTextareaHeight, el.scrollHeight)}px`
   }, [input])
 
   function handleKeyDown(e: React.KeyboardEvent<HTMLTextAreaElement>) {
@@ -47,10 +52,10 @@ export default function ChatInput({
   const isSendDisabled = (!input.trim() && attachments.length === 0) || isStreaming || (needsKey && !apiKey)
 
   return (
-    <footer className="border-t border-gray-200 bg-white px-4 py-3 shadow-[0_-1px_4px_rgba(0,0,0,0.06)] dark:border-gray-700 dark:bg-gray-800">
-      <form className="mx-auto max-w-2xl" onSubmit={(e) => { e.preventDefault(); onSubmit() }}>
+    <footer className="border-t border-gray-200 bg-white px-3 py-2 shadow-[0_-1px_4px_rgba(0,0,0,0.06)] dark:border-gray-700 dark:bg-gray-800 sm:px-4 sm:py-3">
+      <form className="mx-auto max-w-3xl" onSubmit={(e) => { e.preventDefault(); onSubmit() }}>
         {processingStatus && (
-          <div className="mb-3 flex items-center gap-3 rounded-2xl border border-blue-200 bg-blue-50 px-3 py-2 text-sm text-blue-800 dark:border-blue-900/40 dark:bg-blue-950/30 dark:text-blue-100">
+          <div className="mb-3 hidden items-center gap-3 rounded-2xl border border-blue-200 bg-blue-50 px-3 py-2 text-sm text-blue-800 dark:border-blue-900/40 dark:bg-blue-950/30 dark:text-blue-100 sm:flex">
             <span className="relative flex h-5 w-5 items-center justify-center">
               <span className="absolute h-5 w-5 animate-ping rounded-full bg-blue-400/40" />
               <span className="h-2.5 w-2.5 rounded-full bg-blue-500" />
@@ -94,7 +99,7 @@ export default function ChatInput({
           <button
             type="button"
             onClick={() => fileInputRef.current?.click()}
-            className="flex h-[44px] w-[44px] flex-shrink-0 items-center justify-center rounded-xl border border-gray-300 bg-gray-50 text-gray-600 transition hover:border-blue-400 hover:text-blue-600 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-200"
+            className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-xl border border-gray-300 bg-gray-50 text-gray-600 transition hover:border-blue-400 hover:text-blue-600 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-200 sm:h-[44px] sm:w-[44px]"
             title="Attach image"
           >
             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="h-5 w-5">
@@ -103,8 +108,8 @@ export default function ChatInput({
           </button>
           <textarea
             ref={textareaRef}
-            className="max-h-40 min-h-[44px] flex-1 resize-none overflow-y-auto rounded-xl border border-gray-300 bg-gray-50 px-3 py-2.5 text-sm leading-relaxed outline-none transition focus:border-blue-400 focus:ring-2 focus:ring-blue-100 disabled:opacity-50 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 dark:placeholder-gray-500 dark:focus:border-blue-500"
-            placeholder="Message or attach an image... (Enter to send, Shift+Enter for new line)"
+            className="max-h-[34dvh] min-h-10 min-w-0 flex-1 resize-none overflow-y-auto rounded-xl border border-gray-300 bg-gray-50 px-3 py-2 text-sm leading-relaxed outline-none transition-[border-color,box-shadow] focus:border-blue-400 focus:ring-2 focus:ring-blue-100 disabled:opacity-50 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 dark:placeholder-gray-500 dark:focus:border-blue-500 sm:max-h-40 sm:min-h-[44px] sm:py-2.5"
+            placeholder="Message..."
             rows={1}
             value={input}
             disabled={isStreaming}
@@ -114,7 +119,7 @@ export default function ChatInput({
           <button
             type="submit"
             disabled={isSendDisabled}
-            className="flex h-[44px] w-[44px] flex-shrink-0 items-center justify-center rounded-xl bg-blue-500 text-white shadow transition hover:bg-blue-600 disabled:cursor-not-allowed disabled:opacity-40"
+            className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-xl bg-blue-500 text-white shadow transition hover:bg-blue-600 disabled:cursor-not-allowed disabled:opacity-40 sm:h-[44px] sm:w-[44px]"
             aria-label="Send message"
           >
             {isStreaming ? (
