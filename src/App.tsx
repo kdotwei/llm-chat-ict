@@ -743,6 +743,9 @@ export default function App() {
         processingStatus={processingStatus}
         apiKey={apiKey}
         provider={settings.provider}
+        toolUseEnabled={settings.toolUseEnabled}
+        enabledToolIds={settings.enabledMcpServers}
+        availableToolServers={MCP_SERVERS}
         onSubmit={handleSubmit}
       />
     </div>

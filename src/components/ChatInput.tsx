@@ -1,5 +1,5 @@
 import { useEffect, useRef } from 'react'
-import type { Attachment } from '../types'
+import type { Attachment, MCPServerDefinition } from '../types'
 
 interface ChatInputProps {
   input: string
@@ -11,6 +11,9 @@ interface ChatInputProps {
   processingStatus: string | null
   apiKey: string
   provider: string
+  toolUseEnabled: boolean
+  enabledToolIds: string[]
+  availableToolServers: MCPServerDefinition[]
   onSubmit: () => void
 }
 
@@ -24,6 +27,9 @@ export default function ChatInput({
   processingStatus,
   apiKey,
   provider,
+  toolUseEnabled,
+  enabledToolIds,
+  availableToolServers,
   onSubmit,
 }: ChatInputProps) {
   const textareaRef = useRef<HTMLTextAreaElement>(null)
@@ -50,10 +56,38 @@ export default function ChatInput({
 
   const needsKey = provider === 'openai'
   const isSendDisabled = (!input.trim() && attachments.length === 0) || isStreaming || (needsKey && !apiKey)
+  const activeToolServers = availableToolServers.filter((server) => enabledToolIds.includes(server.id))
+
+  function formatToolLabel(name: string) {
+    return name.replace(/\s+Server$/i, '')
+  }
 
   return (
     <footer className="border-t border-gray-200 bg-white px-3 py-2 shadow-[0_-1px_4px_rgba(0,0,0,0.06)] dark:border-gray-700 dark:bg-gray-800 sm:px-4 sm:py-3">
       <form className="mx-auto max-w-3xl" onSubmit={(e) => { e.preventDefault(); onSubmit() }}>
+        <div className="mb-1.5 flex min-w-0 items-center gap-1.5 overflow-x-auto text-[10px] text-gray-400 dark:text-gray-500 sm:mb-2">
+          <span className="flex-shrink-0 font-semibold uppercase tracking-wide">Tools</span>
+          {!toolUseEnabled ? (
+            <span className="flex-shrink-0 rounded-full bg-gray-100 px-2 py-0.5 font-medium text-gray-500 dark:bg-gray-700 dark:text-gray-300">
+              Off
+            </span>
+          ) : activeToolServers.length > 0 ? (
+            activeToolServers.map((server) => (
+              <span
+                key={server.id}
+                title={server.description}
+                className="flex-shrink-0 rounded-full bg-blue-50 px-2 py-0.5 font-medium text-blue-700 ring-1 ring-blue-100 dark:bg-blue-950/30 dark:text-blue-200 dark:ring-blue-900/40"
+              >
+                {formatToolLabel(server.name)}
+              </span>
+            ))
+          ) : (
+            <span className="flex-shrink-0 rounded-full bg-amber-50 px-2 py-0.5 font-medium text-amber-700 ring-1 ring-amber-100 dark:bg-amber-950/30 dark:text-amber-200 dark:ring-amber-900/40">
+              None
+            </span>
+          )}
+        </div>
+
         {processingStatus && (
           <div className="mb-3 hidden items-center gap-3 rounded-2xl border border-blue-200 bg-blue-50 px-3 py-2 text-sm text-blue-800 dark:border-blue-900/40 dark:bg-blue-950/30 dark:text-blue-100 sm:flex">
             <span className="relative flex h-5 w-5 items-center justify-center">
