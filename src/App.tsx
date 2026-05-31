@@ -9,6 +9,8 @@ import {
   loadSettings,
   saveMemories,
   getModelsUrl,
+  getChatCompletionsUrl,
+  isLmStudioProvider,
 } from './constants'
 import { useDarkMode } from './hooks/useDarkMode'
 import Header from './components/Header'
@@ -329,7 +331,7 @@ export default function App() {
   }, [settings])
 
   useEffect(() => {
-    const isLmStudio = settings.provider === 'lm-studio'
+    const isLmStudio = isLmStudioProvider(settings.provider)
     const needsKey = settings.provider === 'openai'
     if (needsKey && !apiKey) {
       setAvailableModels([])
@@ -388,7 +390,7 @@ export default function App() {
   }
 
   async function callChatApi(body: Record<string, unknown>) {
-    const isLmStudio = settings.provider === 'lm-studio'
+    const isLmStudio = isLmStudioProvider(settings.provider)
     const headers: Record<string, string> = {
       'Content-Type': 'application/json',
     }
@@ -398,7 +400,7 @@ export default function App() {
       headers['Authorization'] = 'Bearer lm-studio'
     }
 
-    const response = await fetch(settings.apiUrl, {
+    const response = await fetch(getChatCompletionsUrl(settings.apiUrl), {
       method: 'POST',
       headers,
       body: JSON.stringify(body),

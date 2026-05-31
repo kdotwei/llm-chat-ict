@@ -224,8 +224,8 @@ export default function MessageList({
   }, [messages, processingStatus])
 
   return (
-    <main className="min-h-0 flex-1 overflow-y-auto px-3 py-4 sm:px-4 sm:py-6">
-      <div className="mx-auto flex w-full max-w-3xl flex-col gap-4">
+    <main className="min-h-0 flex-1 overflow-y-auto px-3 py-3 sm:px-4 sm:py-6">
+      <div className="mx-auto flex w-full max-w-3xl flex-col gap-3 sm:gap-4">
         {messages.length === 0 && !processingStatus && (
           <div className="my-auto py-8 text-center animate-fade-in sm:py-10">
             <h2 className="bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-3xl font-extrabold tracking-tight text-transparent dark:from-blue-400 dark:to-indigo-400 font-heading sm:text-4xl">
@@ -318,7 +318,7 @@ export default function MessageList({
               {msg.role === 'assistant' ? (
                 <div className="flex min-w-0 max-w-full flex-col animate-fade-in sm:max-w-[78%]">
                   {(msg.model || msg.routeLabel) && (
-                    <div className="mb-1 flex flex-wrap gap-1 text-[10px] uppercase tracking-wide text-gray-400 dark:text-gray-500">
+                    <div className="mb-1 hidden flex-wrap gap-1 text-[10px] uppercase tracking-wide text-gray-400 dark:text-gray-500 sm:flex">
                       {msg.model && (
                         <span className="rounded-full bg-gray-100 px-2 py-0.5 dark:bg-gray-700">
                           {msg.model}

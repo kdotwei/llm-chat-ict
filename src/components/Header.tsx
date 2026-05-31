@@ -1,3 +1,5 @@
+import { getProviderLabel } from '../constants'
+
 interface HeaderProps {
   model: string
   routedModels: {
@@ -27,14 +29,27 @@ export default function Header({
   provider,
   isConnected,
 }: HeaderProps) {
-  const providerLabel = provider === 'lm-studio' ? 'LM Studio' : provider === 'openai' ? 'OpenAI Cloud' : 'Custom Endpoint'
+  const providerLabel = getProviderLabel(provider)
 
   return (
-    <header className="border-b border-gray-200 bg-white px-3 py-3 shadow-sm dark:border-gray-700 dark:bg-gray-800 sm:px-4">
+    <header className="border-b border-gray-200 bg-white px-3 py-2 shadow-sm dark:border-gray-700 dark:bg-gray-800 sm:px-4 sm:py-3">
       <div className="flex items-center justify-between gap-2">
-        <h1 className="min-w-0 flex-1 truncate text-base font-semibold tracking-tight text-gray-800 dark:text-gray-100 font-heading sm:text-lg">
-          LLM Chatroom v2
-        </h1>
+        <div className="flex min-w-0 flex-1 items-center gap-2">
+          <h1 className="min-w-0 truncate text-base font-semibold tracking-tight text-gray-800 dark:text-gray-100 font-heading sm:text-lg">
+            LLM Chatroom v2
+          </h1>
+          <span
+            className={`inline-flex flex-shrink-0 items-center gap-1 rounded-full px-1.5 py-0.5 text-[10px] font-semibold leading-none sm:hidden ${
+              isConnected
+                ? 'bg-green-100 text-green-700 dark:bg-green-950/40 dark:text-green-300'
+                : 'bg-amber-100 text-amber-700 dark:bg-amber-950/40 dark:text-amber-300'
+            }`}
+            title={`${providerLabel} ${isConnected ? 'Connected' : 'Offline'}`}
+          >
+            <span className={`h-1.5 w-1.5 rounded-full ${isConnected ? 'bg-green-500' : 'bg-amber-500 animate-pulse'}`} />
+            {isConnected ? 'Online' : 'Offline'}
+          </span>
+        </div>
         <div className="flex flex-shrink-0 items-center gap-1 sm:gap-2">
           {processingStatus && (
             <div className="hidden items-center gap-2 rounded-full border border-blue-200 bg-blue-50 px-3 py-1 text-[11px] font-medium text-blue-700 md:flex dark:border-blue-900/40 dark:bg-blue-950/30 dark:text-blue-200">
@@ -44,7 +59,7 @@ export default function Header({
           )}
           <button
             onClick={onThemeToggle}
-            className="flex h-9 w-9 items-center justify-center rounded-lg text-gray-400 transition hover:bg-gray-100 hover:text-gray-700 dark:text-gray-400 dark:hover:bg-gray-700 dark:hover:text-gray-200"
+            className="flex h-8 w-8 items-center justify-center rounded-lg text-gray-400 transition hover:bg-gray-100 hover:text-gray-700 dark:text-gray-400 dark:hover:bg-gray-700 dark:hover:text-gray-200 sm:h-9 sm:w-9"
             title={isDark ? 'Switch to light mode' : 'Switch to dark mode'}
           >
             {isDark ? (
@@ -59,7 +74,7 @@ export default function Header({
           </button>
           <button
             onClick={onSettingsClick}
-            className="flex h-9 w-9 items-center justify-center rounded-lg text-gray-400 transition hover:bg-gray-100 hover:text-gray-700 dark:text-gray-400 dark:hover:bg-gray-700 dark:hover:text-gray-200"
+            className="flex h-8 w-8 items-center justify-center rounded-lg text-gray-400 transition hover:bg-gray-100 hover:text-gray-700 dark:text-gray-400 dark:hover:bg-gray-700 dark:hover:text-gray-200 sm:h-9 sm:w-9"
             title="Settings"
           >
             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="h-5 w-5">
@@ -68,7 +83,7 @@ export default function Header({
           </button>
           <button
             onClick={onKeyClick}
-            className="flex h-9 w-9 items-center justify-center rounded-lg text-gray-400 transition hover:bg-gray-100 hover:text-gray-700 dark:text-gray-400 dark:hover:bg-gray-700 dark:hover:text-gray-200"
+            className="flex h-8 w-8 items-center justify-center rounded-lg text-gray-400 transition hover:bg-gray-100 hover:text-gray-700 dark:text-gray-400 dark:hover:bg-gray-700 dark:hover:text-gray-200 sm:h-9 sm:w-9"
             title="Set API Key"
           >
             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="h-5 w-5">
@@ -77,7 +92,7 @@ export default function Header({
           </button>
         </div>
       </div>
-      <div className="mt-2 min-w-0 space-y-1.5 sm:mt-2">
+      <div className="mt-2 hidden min-w-0 space-y-1.5 sm:block">
         <div className="flex min-w-0 items-center gap-2 text-xs text-gray-400 dark:text-gray-500">
           <span title={model} className="min-w-0 truncate">
             Base: {model || '—'}

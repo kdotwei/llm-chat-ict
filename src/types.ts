@@ -62,5 +62,5 @@ export interface Settings {
   toolUseEnabled: boolean
   enabledMcpServers: string[]
   apiUrl: string
-  provider: 'lm-studio' | 'openai' | 'custom'
+  provider: 'lm-studio' | 'lm-studio-remote' | 'openai' | 'custom'
 }
